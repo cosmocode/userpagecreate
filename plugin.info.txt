@@ -1,0 +1,7 @@
+base   userpagecreate
+author Adrian Lang
+email  lang@cosmocode.de
+date   2009-12-15
+name   userpagecreate plugin
+desc   automatically create user pages on first login
+url    http://www.dokuwiki.org/plugin:userpagecreate
