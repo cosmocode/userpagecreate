@@ -56,7 +56,7 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
         }
 
         foreach($data as $k => $v) {
-            $wikipage = str_replace('@@' . strtoupper($k) . '@@', $v, $wikipage);
+            $wikipage = str_replace('@' . strtoupper($k) . '@', $v, $wikipage);
         }
 
         saveWikiText($userpage, $wikipage, $this->getConf('create_summary'));
