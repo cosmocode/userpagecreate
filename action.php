@@ -49,19 +49,14 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
             }
         }
 
-        $datalist = '';
-        foreach($data as $k => $v) {
-            $datalist .= "  * $k: $v\n";
-        }
-
         $wikipage = pageTemplate(array($userpage));
 
         if ($wikipage === '') {
             return;
         }
 
-        foreach(array('USERDATA'  => $datalist) as $k => $v) {
-            $wikipage = str_replace("@@$k@@", $v, $wikipage);
+        foreach($data as $k => $v) {
+            $wikipage = str_replace('@@' . strtoupper($k) . '@@', $v, $wikipage);
         }
 
         saveWikiText($userpage, $wikipage, $this->getConf('create_summary'));
