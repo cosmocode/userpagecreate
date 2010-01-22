@@ -37,11 +37,8 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
             return;
         }
 
-        // $INFO is not yet available at this stage
-        global $INFO;
-        $INFO = pageinfo();
-
-        $data = $INFO['userinfo'];
+        global $USERINFO;
+        $data = $USERINFO;
 
         foreach(array('grps', 'pass') as $hidden) {
             if (isset($data[$hidden])) {
