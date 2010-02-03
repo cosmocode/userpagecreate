@@ -37,9 +37,11 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
         $tpl_name = $this->getConf('pagetemplate');
         if ($tpl_name !== '' && page_exists($tpl_name)) {
             $tpl = io_readFile(wikiFN($tpl_name));
-            $userpage = parsePageTemplate($tpl, $userpage_name);
+            if ($tpl !== '') {
+                $userpage = parsePageTemplate($tpl, $userpage_name);
+            }
         }
-        if ($userpage === '') {
+        if (!isset($userpage)) {
             $userpage = pageTemplate(array($userpage_name));
         }
         if ($userpage === '') {
