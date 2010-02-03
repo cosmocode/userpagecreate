@@ -6,5 +6,6 @@
  */
 
 
-$meta['pagename_tpl'] = array('string');
+$meta['target'] = array('string');
+$meta['pagetemplate'] = array('string');
 $meta['create_summary'] = array('string');
