@@ -6,5 +6,5 @@
  */
 
 $conf['target']         = '';
-$conf['pagetemplate']   = '';
+$conf['template']   = '';
 $conf['create_summary'] = 'userpage automatically created by createuserpage plugin';

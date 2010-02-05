@@ -14,6 +14,7 @@ if (!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
 if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
 
 require_once DOKU_PLUGIN.'action.php';
+require_once DOKU_INC.'inc/search.php';
 
 class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
     function register(&$controller) {
@@ -27,24 +28,43 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
             return;
         }
 
-        // Check if userpage already exists.
-        $userpage_name = sprintf($this->getConf('target'), $_SERVER['REMOTE_USER']);
-        if (page_exists($userpage_name)) {
+        global $conf;
+
+        $res = $this->getConf('target') . $_SERVER['REMOTE_USER'];
+        $tpl = $this->getConf('template');
+        $do_ns = (strlen($tpl) > 0) && substr($tpl, -1, 1) === ':';
+
+        if ($res === '') {
             return;
         }
 
-        // Get userpage template.
-        $tpl_name = $this->getConf('pagetemplate');
-        if ($tpl_name !== '' && page_exists($tpl_name)) {
-            $tpl = io_readFile(wikiFN($tpl_name));
-            if ($tpl !== '') {
-                $userpage = parsePageTemplate($tpl, $userpage_name);
+        // Check if userpage or usernamespace already exists.
+        if (page_exists($res . ($do_ns ? (':' . $conf['start']) : ''))) {
+            return;
+        }
+
+        // Get templates and target page names.
+        $parsed = false;
+        $pages = array();
+        if ($do_ns) {
+            $t_pages = array();
+            search($t_pages, $conf['datadir'], 'search_universal',
+                   array('depth' => 0, 'listfiles' => true),
+                   str_replace(':', '/', getNS($tpl)));
+            foreach($t_pages as $t_page) {
+                $tpl_name = cleanID($t_page['id']);
+                $pages[$res . ':' . substr($tpl_name, strlen(getNS($tpl)) + 1)] = rawWiki($tpl_name);
+            }
+        } else {
+            if ($tpl === '') {
+                $pages[$res] = pageTemplate(array($res));
+                $parsed = true;
+            } elseif (page_exists($tpl)) {
+                $pages[$res] = rawWiki($tpl);
             }
         }
-        if (!isset($userpage)) {
-            $userpage = pageTemplate(array($userpage_name));
-        }
-        if ($userpage === '') {
+
+        if (count($pages) === 0) {
             return;
         }
 
@@ -58,11 +78,18 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
                 unset($data[$hidden]);
             }
         }
-        foreach($data as $k => $v) {
-            $userpage = str_replace('@' . strtoupper($k) . '@', $v, $userpage);
-        }
 
-        saveWikiText($userpage_name, $userpage, $this->getConf('create_summary'));
+        // Parse templates and write pages.
+        foreach ($pages as $name => &$content) {
+            if (!$parsed) {
+                $content = parsePageTemplate($content, $name);
+            }
+            foreach($data as $k => $v) {
+                $content = str_replace('@' . strtoupper($k) . '@', $v, $content);
+            }
+
+            saveWikiText($name, $content, $this->getConf('create_summary'));
+        }
     }
 }
 

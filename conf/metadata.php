@@ -7,5 +7,5 @@
 
 
 $meta['target'] = array('string');
-$meta['pagetemplate'] = array('string');
+$meta['template'] = array('string');
 $meta['create_summary'] = array('string');
