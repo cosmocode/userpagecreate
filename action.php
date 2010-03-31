@@ -18,12 +18,11 @@ require_once DOKU_INC.'inc/search.php';
 
 class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
     function register(&$controller) {
-       $controller->register_hook('AUTH_LOGIN_CHECK', 'AFTER', $this, 'handle_auth_login_check');
-
+       $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handle_action_act_preprocess');
     }
 
-    function handle_auth_login_check(&$event, $param) {
-        if (!$event->result) {
+    function handle_action_act_preprocess(&$event, $param) {
+        if (!isset($_SERVER['REMOTE_USER'])) {
             // No successful login
             return;
         }
