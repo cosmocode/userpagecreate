@@ -81,7 +81,8 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
         // Parse templates and write pages.
         foreach ($pages as $name => &$content) {
             if (!$parsed) {
-                $content = parsePageTemplate(array('tpl' => $content, 'id' => $name));
+                $data = array('tpl' => $content, 'id' => $name);
+                $content = parsePageTemplate($data);
             }
             foreach($data as $k => $v) {
                 $content = str_replace('@' . strtoupper($k) . '@', $v, $content);
