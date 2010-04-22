@@ -69,22 +69,22 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
 
         // Get additional user data from auth backend.
         global $USERINFO;
-        $data = $USERINFO;
+        $auth_replaces = $USERINFO;
         foreach(array('grps', 'pass', // Secret data
                       'name', 'mail' // Already replaced by parsePageTemplate
                 ) as $hidden) {
-            if (isset($data[$hidden])) {
-                unset($data[$hidden]);
+            if (isset($auth_replaces[$hidden])) {
+                unset($auth_replaces[$hidden]);
             }
         }
 
         // Parse templates and write pages.
         foreach ($pages as $name => &$content) {
             if (!$parsed) {
-                $data = array('tpl' => $content, 'id' => $name);
-                $content = parsePageTemplate($data);
+                $byref_data = array('tpl' => $content, 'id' => $name);
+                $content = parsePageTemplate($byref_data);
             }
-            foreach($data as $k => $v) {
+            foreach($auth_replaces as $k => $v) {
                 $content = str_replace('@' . strtoupper($k) . '@', $v, $content);
             }
 
