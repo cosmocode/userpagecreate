@@ -17,7 +17,7 @@ require_once DOKU_PLUGIN.'action.php';
 require_once DOKU_INC.'inc/search.php';
 
 class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
-    function register(&$controller) {
+    function register(Doku_Event_Handler &$controller) {
        $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handle_action_act_preprocess');
     }
 
@@ -41,6 +41,21 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
         if (page_exists($res . ($do_ns ? (':' . $conf['start']) : ''))) {
             return;
         }
+
+        $data = array(
+            'do_ns' => $do_ns,
+            'tpl' => $tpl,
+            'res' => $res
+        );
+        trigger_event('USERPAGECREATE_PAGE_CREATE', $data, array($this, 'createUserSpace'), true);
+    }
+
+    function createUserSpace($data) {
+        global $conf;
+
+        $do_ns = $data['do_ns'];
+        $tpl = $data['tpl'];
+        $res = $data['res'];
 
         // Get templates and target page names.
         $parsed = false;
