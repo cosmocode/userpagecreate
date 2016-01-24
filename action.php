@@ -17,7 +17,7 @@ require_once DOKU_PLUGIN.'action.php';
 require_once DOKU_INC.'inc/search.php';
 
 class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
-    function register(Doku_Event_Handler &$controller) {
+    function register(Doku_Event_Handler $controller) {
        $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handle_action_act_preprocess');
     }
 
