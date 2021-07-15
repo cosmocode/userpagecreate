@@ -11,17 +11,20 @@ if (!defined('DOKU_INC')) die();
 
 if (!defined('DOKU_LF')) define('DOKU_LF', "\n");
 if (!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
-if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN',DOKU_INC.'lib/plugins/');
+if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
 
-require_once DOKU_PLUGIN.'action.php';
-require_once DOKU_INC.'inc/search.php';
+require_once DOKU_PLUGIN . 'action.php';
+require_once DOKU_INC . 'inc/search.php';
 
-class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
-    function register(Doku_Event_Handler $controller) {
-       $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handle_action_act_preprocess');
+class action_plugin_userpagecreate extends DokuWiki_Action_Plugin
+{
+    function register(Doku_Event_Handler $controller)
+    {
+        $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handle_action_act_preprocess');
     }
 
-    function handle_action_act_preprocess(&$event, $param) {
+    function handle_action_act_preprocess(&$event, $param)
+    {
         if (!isset($_SERVER['REMOTE_USER'])) {
             // No successful login
             return;
@@ -45,12 +48,13 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
         $data = array(
             'do_ns' => $do_ns,
             'tpl' => $tpl,
-            'res' => $res
+            'res' => $res,
         );
         trigger_event('USERPAGECREATE_PAGE_CREATE', $data, array($this, 'createUserSpace'), true);
     }
 
-    function createUserSpace($data) {
+    function createUserSpace($data)
+    {
         global $conf;
 
         $do_ns = $data['do_ns'];
@@ -63,9 +67,9 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
         if ($do_ns) {
             $t_pages = array();
             search($t_pages, $conf['datadir'], 'search_universal',
-                   array('depth' => 0, 'listfiles' => true),
-                   str_replace(':', '/', getNS($tpl)));
-            foreach($t_pages as $t_page) {
+                array('depth' => 0, 'listfiles' => true),
+                str_replace(':', '/', getNS($tpl)));
+            foreach ($t_pages as $t_page) {
                 $tpl_name = cleanID($t_page['id']);
                 $pages[$res . ':' . substr($tpl_name, strlen(getNS($tpl)) + 1)] = rawWiki($tpl_name);
             }
@@ -85,9 +89,12 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
         // Get additional user data from auth backend.
         global $USERINFO;
         $auth_replaces = $USERINFO;
-        foreach(array('grps', 'pass', // Secret data
-                      'name', 'mail' // Already replaced by parsePageTemplate
-                ) as $hidden) {
+        foreach (array(
+                     'grps',
+                     'pass', // Secret data
+                     'name',
+                     'mail' // Already replaced by parsePageTemplate
+                 ) as $hidden) {
             if (isset($auth_replaces[$hidden])) {
                 unset($auth_replaces[$hidden]);
             }
@@ -99,7 +106,7 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin {
                 $byref_data = array('tpl' => $content, 'id' => $name);
                 $content = parsePageTemplate($byref_data);
             }
-            foreach($auth_replaces as $k => $v) {
+            foreach ($auth_replaces as $k => $v) {
                 $content = str_replace('@' . strtoupper($k) . '@', $v, $content);
             }
 
