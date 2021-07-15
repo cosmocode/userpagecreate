@@ -14,6 +14,10 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin
     public function register(Doku_Event_Handler $controller)
     {
         $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handle_action_act_preprocess');
+
+        if ($this->getConf('delete')) {
+            $controller->register_hook('AUTH_USER_CHANGE', 'AFTER', $this, 'handleUserDeletion');
+        }
     }
 
     /**
@@ -29,29 +33,11 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin
         global $conf;
 
         $user = $INPUT->server->str('REMOTE_USER');
-
-        // no user, nothing to do
         if (!$user) return;
 
-        // prepare info
-        $res = $this->getConf('target') . $user;
-        $tpl = $this->getConf('template');
-        $do_ns = (strlen($tpl) > 0) && substr($tpl, -1, 1) === ':';
-
-        // no ressource, nothing to do
-        if ($res === '') return;
-
-        // Check if userpage or usernamespace already exists.
-        if (page_exists($res . ($do_ns ? (':' . $conf['start']) : ''))) {
-            return;
-        }
-
-        // prepare Event Data
-        $data = array(
-            'do_ns' => $do_ns,
-            'tpl' => $tpl,
-            'res' => $res,
-        );
+        $data = $this->userSpaceData($user);
+        if ($data === null) return;
+        if ($data['exists']) return;
 
         // trigger custom Event
         Event::createAndTrigger(
@@ -59,6 +45,34 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin
             $data,
             array($this, 'createUserSpace'),
             true
+        );
+    }
+
+    /**
+     * @param $user
+     * @return array|null The appropriate data or null if configuration failed
+     */
+    protected function userSpaceData($user)
+    {
+        global $conf;
+
+        // prepare info
+        $res = $this->getConf('target') . $user;
+        $tpl = $this->getConf('template');
+        $do_ns = (strlen($tpl) > 0) && substr($tpl, -1, 1) === ':';
+
+        // no ressource, nothing to do
+        if ($res === '') return null;
+
+        // Check if userpage or usernamespace already exists.
+        $exists = page_exists($res . ($do_ns ? (':' . $conf['start']) : ''));
+
+        // prepare Event Data
+        return array(
+            'do_ns' => $do_ns,
+            'tpl' => $tpl,
+            'res' => $res,
+            'exists' => $exists,
         );
     }
 
@@ -123,6 +137,79 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin
             }
 
             saveWikiText($name, $content, $this->getConf('create_summary'));
+        }
+    }
+
+    /**
+     * Handle the deletion of the user page when the user is deleted
+     *
+     * @param Doku_Event $event
+     * @param $param
+     */
+    public function handleUserDeletion(Doku_Event $event, $param)
+    {
+        if ($event->data['type'] !== 'delete') return;
+
+        foreach ($event->data['params'] as $info) {
+            $user = $info[0];
+            $data = $this->userSpaceData($user);
+            if ($data === null) continue;
+            if (!$data['exists']) continue;
+            if ($data['do_ns']) {
+                $this->deleteNamespace($data['res']);
+            } else {
+                $this->deletePage($data['res']);
+            }
+        }
+    }
+
+    /**
+     * Delete the given namespace and all old revisions
+     *
+     * @param string $ns
+     */
+    protected function deleteNamespace($ns)
+    {
+        global $conf;
+
+        $ns = str_replace(':', '/', $ns);
+
+        // pages
+        $dir = $conf['datadir'] . '/' . utf8_encodeFN($ns);
+        if (is_dir($dir)) {
+            io_rmdir($dir, true);
+        }
+
+        // attic
+        $dir = $conf['olddir'] . '/' . utf8_encodeFN($ns);
+        if (is_dir($dir)) {
+            io_rmdir($dir, true);
+        }
+    }
+
+    /**
+     * Delete the given page and all old revisions
+     *
+     * @param string $page
+     */
+    protected function deletePage($page)
+    {
+        global $conf;
+
+        $page = str_replace(':', '/', $page);
+
+        // page
+        $file = $conf['datadir'] . '/' . utf8_encodeFN($page) . '.txt';
+        if (is_file($file)) {
+            unlink($file);
+        }
+
+        // attic
+        $files = glob($conf['olddir'] . '/' . utf8_encodeFN($page) . '.*.txt.*');
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                unlink($file);
+            }
         }
     }
 }
