@@ -1,59 +1,71 @@
 <?php
+
+use dokuwiki\Extension\Event;
+
 /**
  * DokuWiki Plugin userpagecreate (Action Component)
  *
  * @license GPL 2 http://www.gnu.org/licenses/gpl-2.0.html
  * @author  Adrian Lang <lang@cosmocode.de>
  */
-
-// must be run within Dokuwiki
-if (!defined('DOKU_INC')) die();
-
-if (!defined('DOKU_LF')) define('DOKU_LF', "\n");
-if (!defined('DOKU_TAB')) define('DOKU_TAB', "\t");
-if (!defined('DOKU_PLUGIN')) define('DOKU_PLUGIN', DOKU_INC . 'lib/plugins/');
-
-require_once DOKU_PLUGIN . 'action.php';
-require_once DOKU_INC . 'inc/search.php';
-
 class action_plugin_userpagecreate extends DokuWiki_Action_Plugin
 {
-    function register(Doku_Event_Handler $controller)
+    /** @inheritDoc */
+    public function register(Doku_Event_Handler $controller)
     {
         $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handle_action_act_preprocess');
     }
 
-    function handle_action_act_preprocess(&$event, $param)
+    /**
+     * Check and if necessary trigger the page creation
+     *
+     * @triggers USERPAGECREATE_PAGE_CREATE
+     * @param Doku_Event $event
+     * @param $param
+     */
+    public function handle_action_act_preprocess(Doku_Event $event, $param)
     {
-        if (!isset($_SERVER['REMOTE_USER'])) {
-            // No successful login
-            return;
-        }
-
+        global $INPUT;
         global $conf;
 
-        $res = $this->getConf('target') . $_SERVER['REMOTE_USER'];
+        $user = $INPUT->server->str('REMOTE_USER');
+
+        // no user, nothing to do
+        if (!$user) return;
+
+        // prepare info
+        $res = $this->getConf('target') . $user;
         $tpl = $this->getConf('template');
         $do_ns = (strlen($tpl) > 0) && substr($tpl, -1, 1) === ':';
 
-        if ($res === '') {
-            return;
-        }
+        // no ressource, nothing to do
+        if ($res === '') return;
 
         // Check if userpage or usernamespace already exists.
         if (page_exists($res . ($do_ns ? (':' . $conf['start']) : ''))) {
             return;
         }
 
+        // prepare Event Data
         $data = array(
             'do_ns' => $do_ns,
             'tpl' => $tpl,
             'res' => $res,
         );
-        trigger_event('USERPAGECREATE_PAGE_CREATE', $data, array($this, 'createUserSpace'), true);
+
+        // trigger custom Event
+        Event::createAndTrigger(
+            'USERPAGECREATE_PAGE_CREATE',
+            $data,
+            array($this, 'createUserSpace'),
+            true
+        );
     }
 
-    function createUserSpace($data)
+    /**
+     * @param $data
+     */
+    public function createUserSpace($data)
     {
         global $conf;
 
@@ -75,7 +87,7 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin
             }
         } else {
             if ($tpl === '') {
-                $pages[$res] = pageTemplate(array($res));
+                $pages[$res] = pageTemplate($res);
                 $parsed = true;
             } elseif (page_exists($tpl)) {
                 $pages[$res] = rawWiki($tpl);
@@ -114,5 +126,3 @@ class action_plugin_userpagecreate extends DokuWiki_Action_Plugin
         }
     }
 }
-
-// vim:ts=4:sw=4:et:enc=utf-8:
